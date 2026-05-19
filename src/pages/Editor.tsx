@@ -35,6 +35,7 @@ export function Editor() {
   const [coverImage, setCoverImage] = useState('');
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  const [pendingTask, setPendingTask] = useState<'summarize' | 'improve' | 'titles' | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
 
   useEffect(() => {
@@ -61,6 +62,9 @@ export function Editor() {
     }
     
     setAiLoading(true);
+    setPendingTask(action);
+    const loadingToast = action === 'improve' ? toast.loading('Optimizing narrative flow...') : undefined;
+
     try {
       const endpoint = action === 'titles' ? '/api/ai/titles' : 
                       action === 'summarize' ? '/api/ai/summarize' : 
@@ -79,23 +83,27 @@ export function Editor() {
       const data = await res.json();
       
       if (!res.ok) {
-        throw new Error(data.error || 'AI Assistant is resting. Try again later.');
+        throw new Error(data.error || 'The synapse is overloaded. Retry uplink.');
       }
       
       if (action === 'titles') {
         setAiSuggestions(data.titles || []);
+        toast.success('New titles synthesized.');
       } else if (action === 'summarize') {
         toast.success(`Summary: ${data.summary}`, {
-          duration: 6000
+          duration: 8000,
+          icon: '📝'
         });
       } else {
         setContent(data.result);
-        toast.success('Text improved!');
+        toast.success('Narrative flow optimized.', { id: loadingToast });
       }
     } catch (error: any) {
-      toast.error(error.message || 'AI Assistant is resting. Try again later.');
+      if (loadingToast) toast.error(error.message || 'Uplink failed.', { id: loadingToast });
+      else toast.error(error.message || 'The synapse is overloaded.');
     } finally {
       setAiLoading(false);
+      setPendingTask(null);
     }
   };
 
@@ -244,12 +252,24 @@ export function Editor() {
                    </div>
                    <span className="text-foreground">Generate Titles</span>
                 </div>
-                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />
+                {aiLoading && pendingTask === 'titles' ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />
+                )}
               </button>
 
               {aiSuggestions.length > 0 && (
                 <div className="p-6 bg-indigo-500/5 rounded-3xl border border-indigo-500/10 space-y-4">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-600 italic">Suggested Titles</h4>
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-600 italic">Suggested Titles</h4>
+                    <button 
+                      onClick={() => setAiSuggestions([])}
+                      className="text-[8px] font-black uppercase tracking-tighter text-slate-400 hover:text-red-500 transition-colors"
+                    >
+                      Clear
+                    </button>
+                  </div>
                   <div className="space-y-2">
                     {aiSuggestions.map((s, i) => (
                       <button 
@@ -277,7 +297,29 @@ export function Editor() {
                    </div>
                    <span className="text-foreground">Optimize Flow</span>
                 </div>
-                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />
+                {aiLoading && pendingTask === 'improve' ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />
+                )}
+              </button>
+
+              <button 
+                onClick={() => handleAIAction('summarize')}
+                disabled={aiLoading}
+                className="w-full flex items-center justify-between p-5 bg-surface-muted hover:bg-indigo-500/5 border border-card-border rounded-3xl text-[10px] font-black uppercase tracking-widest transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                   <div className="w-8 h-8 bg-card-bg rounded-xl flex items-center justify-center text-slate-400 group-hover:text-indigo-600 transition-colors">
+                      <Globe className="w-4 h-4" />
+                   </div>
+                   <span className="text-foreground">Synthesis Summary</span>
+                </div>
+                {aiLoading && pendingTask === 'summarize' ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />
+                )}
               </button>
             </div>
           </div>

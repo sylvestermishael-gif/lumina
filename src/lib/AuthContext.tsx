@@ -8,6 +8,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from './firebase';
+import rawConfig from '../../firebase-applet-config.json';
 import { toast } from 'react-hot-toast';
 
 enum OperationType {
@@ -80,39 +81,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(user);
       if (user) {
         const userRef = doc(db, 'users', user.uid);
-        try {
-          const userSnap = await getDoc(userRef);
-          
-          if (!userSnap.exists()) {
-            const newProfile = {
-              id: user.uid,
-              displayName: user.displayName,
-              username: user.email?.split('@')[0] || `user_${user.uid.slice(0, 5)}`,
-              email: user.email,
-              photoURL: user.photoURL,
-              coverURL: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop',
-              createdAt: serverTimestamp(),
-              bio: '',
-              location: '',
-              website: '',
-              twitter: '',
-              github: '',
-              interests: [],
-              isPremium: false,
-              followersCount: 0,
-              followingCount: 0
-            };
-            await setDoc(userRef, newProfile);
-            setProfile(newProfile);
-          } else {
-            setProfile(userSnap.data());
+        
+        const fetchProfile = async (retryCount = 0) => {
+          try {
+            const userSnap = await getDoc(userRef);
+            
+            if (!userSnap.exists()) {
+              const newProfile = {
+                id: user.uid,
+                displayName: user.displayName,
+                username: user.email?.split('@')[0] || `user_${user.uid.slice(0, 5)}`,
+                email: user.email,
+                photoURL: user.photoURL,
+                coverURL: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop',
+                createdAt: serverTimestamp(),
+                bio: '',
+                location: '',
+                website: '',
+                twitter: '',
+                github: '',
+                interests: [],
+                isPremium: false,
+                followersCount: 0,
+                followingCount: 0
+              };
+              await setDoc(userRef, newProfile);
+              setProfile(newProfile);
+            } else {
+              setProfile(userSnap.data());
+            }
+          } catch (error: any) {
+            console.error(`Failed to fetch user profile (attempt ${retryCount + 1}):`, error);
+            
+            if (retryCount < 1 && (error.message?.includes('offline') || error.code === 'unavailable')) {
+              // Quick retry in case of transient network glitch
+              setTimeout(() => fetchProfile(retryCount + 1), 2000);
+              return;
+            }
+
+            if (error.message?.includes('offline') || error.code === 'unavailable') {
+               toast.error('Syncing error: The neural link is offline. If you just created your database, wait a moment for it to sync.', {
+                 duration: 8000,
+                 id: 'firestore-offline-error',
+                 icon: '📡'
+               });
+            }
           }
-        } catch (error) {
-          console.error("Failed to fetch user profile:", error);
-          // If we can't read the profile, the user is signed in but limited.
-          // We don't call handleFirestoreError here to avoid crashing the app on initial load,
-          // but we log it.
-        }
+        };
+
+        fetchProfile();
       } else {
         setProfile(null);
       }
@@ -133,9 +150,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Authentication Error:', error);
       
       if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
-        toast.error('Uplink cancelled by user.');
+        const domain = window.location.hostname;
+        toast.error('Uplink cancelled or blocked. Ensure popups are allowed and authorized.', { duration: 6000 });
+        console.error(`Popup closed. To fix this:
+1. Go to Firebase Console > Authentication > Settings > Authorized Domains
+2. Add these domains:
+   - ${domain}
+   - ais-dev-p5mnit4kjormulu6xg73tt-443608093980.europe-west2.run.app
+   - ais-pre-p5mnit4kjormulu6xg73tt-443608093980.europe-west2.run.app
+3. If it still fails, click the 'Open in new tab' icon in the top right of this preview.`);
       } else if (error.code === 'auth/unauthorized-domain') {
-        toast.error(`Domain ${window.location.hostname} is not authorized for authentication. Please add it in Firebase Console.`);
+        const domain = window.location.hostname;
+        toast.error(`Domain "${domain}" is not authorized!`, { duration: 8000 });
+        console.error(`Add "${domain}" to Authorized Domains in Firebase Console.`);
       } else {
         toast.error(`Authentication Failed: ${error.message}`);
       }

@@ -2,7 +2,7 @@ import express from "express";
 import path from "path";
 import cors from "cors";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
 import axios from "axios";
 import { Resend } from "resend";
 
@@ -42,6 +42,9 @@ app.post("/api/ai/summarize", async (req, res) => {
     const result = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Summarize the following blog post in 2-3 sentences. Keep it engaging.\n\n${content}`,
+      config: {
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
+      }
     });
     res.json({ summary: result.text });
   } catch (error: any) {
@@ -57,15 +60,18 @@ app.post("/api/ai/writing-assistant", async (req, res) => {
   if (!ai) return res.status(503).json({ error: "AI service unavailable" });
 
   const prompts: Record<string, string> = {
-    improve: `Improve the grammar and flow of this text while maintaining its voice. Return ONLY the improved text, no preamble:\n\n${content}`,
-    complete: `Continue writing this blog post naturally based on the previous context. Return ONLY the continuation:\n\n${content}`,
-    shorten: `Make this text more concise without losing key meaning. Return ONLY the shortened text:\n\n${content}`,
+    improve: `Improve the grammar, tone, and narrative flow of this blog post. Make it professional yet conversational. Return ONLY the improved text:\n\n${content}`,
+    complete: `Based on the context, finish this paragraph or section naturally. Return ONLY the new content:\n\n${content}`,
+    shorten: `Condense this text for maximum impact without losing core meaning. Return ONLY the condensed text:\n\n${content}`,
   };
 
   try {
     const result = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: prompts[task] || prompts.improve,
+      config: {
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
+      }
     });
     res.json({ result: result.text });
   } catch (error: any) {
@@ -83,8 +89,9 @@ app.post("/api/ai/titles", async (req, res) => {
   try {
     const result = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `Based on this blog content ${currentTitle ? `and the current title "${currentTitle}"` : ''}, suggest 5 catchy and SEO-friendly titles. ${currentTitle ? "Make sure the suggestions are related to or improvements of the current title to ensure a match in tone and topic." : ""}`,
+      contents: `Suggest 5 viral, SEO-optimized, and catchy titles for this blog content: "${content.substring(0, 500)}". ${currentTitle ? `Current Title: "${currentTitle}". Ensure suggestions match the existing tone.` : ""}`,
       config: { 
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,
