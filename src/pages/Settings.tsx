@@ -23,7 +23,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'react-hot-toast';
-import { usePaystackPayment } from 'react-paystack';
 import { cn } from '../lib/utils';
 
 type Tab = 'profile' | 'account' | 'privacy' | 'billing';
@@ -34,60 +33,71 @@ export default function Settings() {
   const [loading, setLoading] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
-  const paystackConfig = {
-    reference: (new Date()).getTime().toString(),
-    email: user?.email || '',
-    amount: 18000 * 100, // Approximately $12 USD in NGN (18,000 NGN)
-    currency: 'NGN',
-    publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || '',
-    metadata: {
-      userId: user?.uid,
-      custom_fields: [
-        {
-          display_name: "Plan",
-          variable_name: "plan",
-          value: "Nexus Premium"
-        }
-      ]
-    }
-  };
-
-  const initializePayment = usePaystackPayment(paystackConfig);
-
-  const onSuccess = async (reference: any) => {
-    setLoading(true);
-    try {
-      // Verify payment on server
-      const verifyResponse = await fetch(`/api/paystack/verify/${reference.reference}`);
-      const verifyData = await verifyResponse.json();
-      
-      if (verifyData.data.status === 'success') {
-        await updateProfile({ isPremium: true });
-        setIsCheckoutOpen(false);
-        toast.success('Neural frequency elevated to Premium status');
-      } else {
-        throw new Error('Payment verification failed');
-      }
-    } catch (error) {
-       toast.error('Failed to verify premium status');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onClose = () => {
-    setLoading(false);
-    toast.error('Secure payment tunnel closed');
-  };
+  // Paystack Script Loader
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://js.paystack.co/v1/inline.js';
+    script.async = true;
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   const handleUpgrade = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!paystackConfig.publicKey) {
+    const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
+    
+    if (!publicKey) {
       toast.error('Paystack Configuration Missing');
       return;
     }
+
     setLoading(true);
-    initializePayment({ onSuccess, onClose });
+
+    // @ts-ignore
+    const handler = window.PaystackPop.setup({
+      key: publicKey,
+      email: user?.email || '',
+      amount: 18000 * 100,
+      currency: 'NGN',
+      ref: (new Date()).getTime().toString(),
+      metadata: {
+        userId: user?.uid,
+        custom_fields: [
+          {
+            display_name: "Plan",
+            variable_name: "plan",
+            value: "Nexus Premium"
+          }
+        ]
+      },
+      callback: async (response: any) => {
+        setLoading(true);
+        try {
+          const verifyResponse = await fetch(`/api/paystack/verify/${response.reference}`);
+          const verifyData = await verifyResponse.json();
+          
+          if (verifyData.data.status === 'success') {
+            await updateProfile({ isPremium: true });
+            setIsCheckoutOpen(false);
+            toast.success('Neural frequency elevated to Premium status');
+          } else {
+            throw new Error('Payment verification failed');
+          }
+        } catch (error) {
+           toast.error('Failed to verify premium status');
+        } finally {
+          setLoading(false);
+        }
+      },
+      onClose: () => {
+        setLoading(false);
+        toast.error('Secure payment tunnel closed');
+      }
+    });
+
+    handler.openIframe();
   };
 
   const [formData, setFormData] = useState({
