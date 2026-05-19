@@ -1,0 +1,8 @@
+{
+  "name": "Lumina Community",
+  "description": "A premium AI-powered blogging platform with community discussions, rich text editing, and intelligent content assistance.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
