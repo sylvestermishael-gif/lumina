@@ -135,7 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
         toast.error('Uplink cancelled by user.');
       } else if (error.code === 'auth/unauthorized-domain') {
-        toast.error('This domain is not authorized for authentication. Please add it in Firebase Console.');
+        toast.error(`Domain ${window.location.hostname} is not authorized for authentication. Please add it in Firebase Console.`);
       } else {
         toast.error(`Authentication Failed: ${error.message}`);
       }
