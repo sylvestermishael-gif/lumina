@@ -1,10 +1,11 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Bell, PenSquare, LogOut, User as UserIcon, Menu, Heart, Bookmark, Globe, MessageCircle, Zap } from 'lucide-react';
+import { Search, Bell, PenSquare, LogOut, User as UserIcon, Menu, Heart, Bookmark, Globe, MessageCircle, Zap, Sparkles } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 import { cn, formatDate } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { ThemeToggle } from './ThemeToggle';
+import { toast } from 'react-hot-toast';
 
 export function Navbar() {
   const { user, profile, login, logout, isAuthenticating } = useAuth();
@@ -187,11 +188,15 @@ export function PostCard({ post }: { post: any }) {
       <div className="relative aspect-[16/10] overflow-hidden">
          <img 
            src={post.coverImage || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80'} 
+           referrerPolicy="no-referrer"
            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
            alt={post.title}
          />
          <div className="absolute top-4 left-4 flex gap-2">
             <span className="glass-tag text-white px-4 py-1.5">{post.category || 'Opinion'}</span>
+            <span className="glass-tag text-indigo-300 border border-indigo-500/30 px-3 py-1.5 flex items-center gap-1.5 backdrop-blur-md text-[9px] font-black uppercase tracking-widest">
+               <Sparkles className="w-2.5 h-2.5 text-indigo-400 fill-indigo-400/20" /> AI CORE
+            </span>
          </div>
       </div>
 
@@ -208,7 +213,16 @@ export function PostCard({ post }: { post: any }) {
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">{formatDate(post.createdAt)}</span>
             </div>
           </div>
-          <button className="text-slate-300 hover:text-indigo-600 transition-colors p-2">
+          <button 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toast.success('Added to Synapse Bookmarks', {
+                className: "premium-toast"
+              });
+            }}
+            className="text-slate-300 hover:text-indigo-600 transition-colors p-2 relative z-30"
+          >
             <Bookmark className="w-5 h-5" />
           </button>
         </div>

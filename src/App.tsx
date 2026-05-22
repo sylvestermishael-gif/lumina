@@ -75,9 +75,16 @@ function RightSidebar() {
 
   React.useEffect(() => {
     const q = query(collection(db, 'posts'), orderBy('likesCount', 'desc'), limit(5));
-    return onSnapshot(q, (snap) => {
+    const unsub = onSnapshot(q, (snap) => {
       setTrending(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (err) => {
+      console.warn("Index or query error on likesCount, falling back to createdAt:", err);
+      const fallbackQ = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(5));
+      onSnapshot(fallbackQ, (snap) => {
+        setTrending(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
     });
+    return () => unsub();
   }, []);
 
   return (
@@ -170,13 +177,13 @@ function RightSidebar() {
              { topic: 'Neuro-Symbolic UI', posts: 82, growth: '+25%' },
              { topic: 'Post-Desktop Era', posts: 56, growth: '+5%' }
            ].map((disc, i) => (
-             <div key={i} className="group cursor-pointer">
+             <Link key={i} to={`/?q=${encodeURIComponent(disc.topic)}`} className="group block">
                 <div className="flex items-center justify-between mb-1">
                    <span className="text-xs font-black text-foreground group-hover:text-indigo-600 transition-colors uppercase italic">#{disc.topic}</span>
                    <span className="text-[9px] font-black text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded-md">{disc.growth}</span>
                 </div>
                 <div className="text-[9px] text-slate-500 font-bold uppercase tracking-tighter">{disc.posts} active contributions</div>
-             </div>
+             </Link>
            ))}
         </div>
       </div>
@@ -266,6 +273,12 @@ function Home() {
       } else {
         setTrendingPosts(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
       }
+    }, (err) => {
+      console.warn("Index or query error on likesCount, falling back to createdAt:", err);
+      const fallbackQ = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(3));
+      onSnapshot(fallbackQ, (fallbackSnap) => {
+        setTrendingPosts(fallbackSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
+      });
     });
 
     // Creators Smarter
@@ -391,9 +404,9 @@ function Home() {
   };
 
   return (
-    <div className="flex flex-1 overflow-hidden h-full">
+    <div className="flex flex-1 lg:overflow-hidden lg:h-full">
       <LeftSidebar />
-      <main className="flex-1 overflow-y-auto h-[calc(100vh-64px)] scroll-smooth scrollbar-hide">
+      <main className="flex-1 lg:overflow-y-auto lg:h-[calc(100vh-64px)] scroll-smooth scrollbar-hide">
         
         {/* 1. HERO SECTION */}
         {!searchQuery && (
@@ -743,9 +756,9 @@ function Communities() {
     { name: 'Creative Writing', icon: <PenSquare className="w-5 h-5"/>, members: '15k' }
   ]
   return (
-    <div className="flex flex-1 overflow-hidden h-full">
+    <div className="flex flex-1 lg:overflow-hidden lg:h-full">
       <LeftSidebar />
-      <main className="flex-1 overflow-y-auto px-8 py-12 h-[calc(100vh-64px)] scrollbar-hide">
+      <main className="flex-1 lg:overflow-y-auto px-4 sm:px-8 py-12 lg:h-[calc(100vh-64px)] scrollbar-hide">
         <h1 className="text-4xl font-black tracking-tighter text-foreground mb-12 uppercase italic">Universal <span className="text-indigo-600">Hubs</span></h1>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {cats.map((cat, i) => (
@@ -772,16 +785,34 @@ function Trending() {
 
   React.useEffect(() => {
     const q = query(collection(db, 'posts'), orderBy('likesCount', 'desc'), limit(20));
-    return onSnapshot(q, (snap) => {
-      setLivePosts(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
-      setLoading(false);
+    const unsub = onSnapshot(q, (snap) => {
+      if (snap.empty) {
+        const fallbackQ = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(20));
+        const unsubFallback = onSnapshot(fallbackQ, (fallbackSnap) => {
+          setLivePosts(fallbackSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
+          setLoading(false);
+        });
+        return () => unsubFallback();
+      } else {
+        setLivePosts(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
+        setLoading(false);
+      }
+    }, (err) => {
+      console.warn("Index or query error on likesCount, falling back to createdAt:", err);
+      const fallbackQ = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(20));
+      const unsubFallback = onSnapshot(fallbackQ, (fallbackSnap) => {
+        setLivePosts(fallbackSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
+        setLoading(false);
+      });
+      return () => unsubFallback();
     });
+    return () => unsub();
   }, []);
 
   return (
-    <div className="flex flex-1 overflow-hidden h-full">
+    <div className="flex flex-1 lg:overflow-hidden lg:h-full">
       <LeftSidebar />
-      <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-8 h-[calc(100vh-64px)] scroll-smooth scrollbar-hide">
+      <main className="flex-1 lg:overflow-y-auto px-4 sm:px-8 py-8 lg:h-[calc(100vh-64px)] scroll-smooth scrollbar-hide">
         <div className="max-w-5xl mx-auto space-y-12 pb-20">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
@@ -900,9 +931,9 @@ function Creators() {
   }, []);
 
   return (
-    <div className="flex flex-1 overflow-hidden h-full">
+    <div className="flex flex-1 lg:overflow-hidden lg:h-full">
       <LeftSidebar />
-      <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-8 h-[calc(100vh-64px)] scroll-smooth scrollbar-hide">
+      <main className="flex-1 lg:overflow-y-auto px-4 sm:px-8 py-8 lg:h-[calc(100vh-64px)] scroll-smooth scrollbar-hide">
         <div className="max-w-5xl mx-auto space-y-12 pb-20">
           <div className="space-y-1">
             <h2 className="text-3xl font-black tracking-tighter text-foreground uppercase italic">Top Curators</h2>
@@ -971,16 +1002,24 @@ function Bookmarks() {
   React.useEffect(() => {
     // For demo, we show the same highly liked posts as bookmarks
     const q = query(collection(db, 'posts'), orderBy('likesCount', 'desc'), limit(5));
-    return onSnapshot(q, (snap) => {
+    const unsub = onSnapshot(q, (snap) => {
       setBookmarks(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
       setLoading(false);
+    }, (err) => {
+      console.warn("Index or query error on likesCount, falling back to createdAt:", err);
+      const fallbackQ = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(5));
+      onSnapshot(fallbackQ, (snap) => {
+        setBookmarks(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
+        setLoading(false);
+      });
     });
+    return () => unsub();
   }, []);
 
   return (
-    <div className="flex flex-1 overflow-hidden h-full">
+    <div className="flex flex-1 lg:overflow-hidden lg:h-full">
       <LeftSidebar />
-      <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-8 h-[calc(100vh-64px)] scroll-smooth scrollbar-hide">
+      <main className="flex-1 lg:overflow-y-auto px-4 sm:px-8 py-8 lg:h-[calc(100vh-64px)] scroll-smooth scrollbar-hide">
         <div className="max-w-5xl mx-auto space-y-12 pb-20">
           <div className="space-y-4">
              <div className="flex items-center gap-3">
@@ -1017,11 +1056,124 @@ function Bookmarks() {
 }
 
 export default function App() {
+  React.useEffect(() => {
+    const seedDatabaseIfEmpty = async () => {
+      try {
+        const postsCol = collection(db, 'posts');
+        const snap = await getDocs(query(postsCol, limit(1)));
+        if (snap.empty) {
+          console.log("Seeding Firestore with premium curated starter essays...");
+          const seedPosts = [
+            {
+              title: "The Ethics of AGI: Aligning Sentience with Human Flourishing",
+              category: "Ethics",
+              coverImage: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&q=80&w=1200",
+              authorId: "system_curator_1",
+              authorName: "Lumina Research",
+              authorPhoto: "https://api.dicebear.com/7.x/avataaars/svg?seed=lumina_system",
+              likesCount: 124,
+              viewsCount: 1240,
+              commentsCount: 12,
+              content: `
+The acceleration of computing power has brought us to a profound crossroad. As deep learning models transition from narrow task execution into broader cognitive agents, we are forced to redefine the boundaries of artificial intelligence. It is no longer a question of *when* these models will influence our lives, but *to what degree* we can align their development with fundamental human values.
+
+> "The true metric of technology is not its absolute power, but the refinement of its alignment with human thriving." 
+> — Synapse Editorial Board
+
+## Core Architectures and Modern Paradigms
+
+Synthesizing human intent is not merely a technical challenge of fine-tuning weights. It requires a fundamental paradigm shift in how we structure our systems:
+
+1. **Neuro-Symbolic Integration**: Fusing deep neural learning with rule-based symbolic reasoning to establish deterministic guardrails.
+2. **Dynamic Constitutional Training**: Training models in multi-agent environments where reward mechanisms are tied to robust ethical frameworks.
+3. **Decentralized Verification Arrays**: Running independent validation nodes to monitor model boundaries in real-time.
+
+## The Human-Machine Synthesis
+
+As we build these systems, our goal must not be substitution, but amplification. Designing interfaces that facilitate bidirectional understanding allows humans and machines to operate as high-bandwidth cognitive collectives. This symbiotic union holds the key to solving our most complex scientific, social, and philosophical frontiers.
+              `.trim(),
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            },
+            {
+              title: "Neuro-Symbolic UI & The Architecture of Conversational Spatial Canvas",
+              category: "Design",
+              coverImage: "https://images.unsplash.com/photo-1541462608143-67571c6738dd?auto=format&fit=crop&q=80&w=1200",
+              authorId: "system_curator_2",
+              authorName: "Curator's Lounge",
+              authorPhoto: "https://api.dicebear.com/7.x/avataaars/svg?seed=curators_lounge",
+              likesCount: 82,
+              viewsCount: 980,
+              commentsCount: 7,
+              content: `
+The classical computer interface has remained practically unchanged for over three decades. Folders, windows, and pointer cursors are desktop abstractions built for another century. Today, as context-aware computing and spatial technologies reach maturity, we are witnessing the dawn of a new design ecosystem.
+
+> "The screen is no longer a canvas; it is an active conversational partner."
+> — Curator's Lounge, v4.0
+
+## Principles of Fluid Spatial Design
+
+Creating interfaces for this new paradigm requires departing from static layouts. Instead, we must embrace three core pillars of responsive spatial architecture:
+
+* **Intent-Driven Contextuality**: Interfaces that dynamically reconstruct themselves based on user gaze, biometric rhythms, and historical tasks.
+* **Low-Latency Kinetic Feedback**: Multi-modal physical response structures that synchronize virtual actions with high-fidelity haptic feedback.
+* **Cross-Reality Semantic Interoperability**: Seamlessly translating digital assets from 2D viewports into spatial environments.
+
+## The Next Interface Shift
+
+We are moving away from traditional app boundaries toward dynamic, agentic interactions. In this near future, you will not open an application; you will orchestrate streams of intelligence that manifest contextually, precisely when and where your cognitive focus demands them.
+              `.trim(),
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            },
+            {
+              title: "Beyond the Vector: Navigating Cryptographic Autonomy in a Quantum World",
+              category: "Quantum",
+              coverImage: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=1200",
+              authorId: "system_curator_3",
+              authorName: "Satoshi Legacy",
+              authorPhoto: "https://api.dicebear.com/7.x/avataaars/svg?seed=legacy",
+              likesCount: 95,
+              viewsCount: 1120,
+              commentsCount: 15,
+              content: `
+In a fully connected digital ecosystem, security is not just a feature—it is the bedrock of sovereignty. As quantum processing capabilities advance toward cryptographic viability, our current secure standards risk obsolescence. The race is on to deploy encryption architectures that remain impenetrable to quantum attacks.
+
+> "Security is a continuous movement of adaptive resistance, not a final state of perfection."
+> — Cyber-Security Network Bulletin
+
+## Pillars of Quantum-Resistant Sovereignty
+To secure cyber corridors, we coordinate a multi-layered cryptographic paradigm across all intelligence nodes:
+
+1. **Lattice-Based Encryption Protocols**: Standardizing complex mathematical lattices that are theoretically impossible for quantum computers to solve.
+2. **Ephemeral Quantum Key Distribution (QKD)**: Utilizing fiber-optic networks to send keys encoded in single light photons, ensuring immediate detection of any eavesdropping.
+3. **Multi-Signature Peer Authentication**: Distributing trust across diverse, independent verification nodes to eliminate single failure routes.
+
+## Securing the Neural Streams
+
+As high-speed cognitive networks expand, safeguarding the sanity of data transfers becomes paramount. We are building the next generation of transport architectures to guarantee that human and machine transmissions remain absolutely private, verified, and safe from observation.
+              `.trim(),
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            }
+          ];
+
+          for (const post of seedPosts) {
+            await addDoc(postsCol, post);
+          }
+        }
+      } catch (err) {
+        console.error("Auto-seeding error:", err);
+      }
+    };
+    seedDatabaseIfEmpty();
+  }, []);
+
   return (
     <ThemeProvider>
       <AuthProvider>
         <Router>
-          <div className="h-screen flex flex-col overflow-hidden bg-background text-foreground transition-colors duration-300">
+          <div className="min-h-screen lg:h-screen flex flex-col lg:overflow-hidden bg-background text-foreground transition-colors duration-300">
             <Navbar />
             <Routes>
               <Route path="/" element={<Home />} />

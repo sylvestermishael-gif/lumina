@@ -104,3 +104,64 @@
 ::-webkit-scrollbar-thumb {
   @apply bg-slate-300 dark:bg-slate-700 rounded-full hover:bg-slate-400 dark:hover:bg-slate-600 transition-colors;
 }
+
+/* Premium Typography formatting for narrative structures */
+.markdown-body {
+  @apply text-foreground text-lg leading-relaxed space-y-6 font-normal not-italic;
+}
+
+.markdown-body h1 {
+  @apply text-3xl md:text-5xl font-black tracking-tight text-foreground uppercase italic mt-12 mb-6 block border-b border-card-border pb-3;
+}
+
+.markdown-body h2 {
+  @apply text-2xl md:text-4xl font-black tracking-tight text-foreground uppercase italic mt-10 mb-4 block;
+}
+
+.markdown-body h3 {
+  @apply text-xl md:text-2xl font-bold tracking-tight text-foreground mt-8 mb-3 block;
+}
+
+.markdown-body p {
+  @apply text-slate-700 dark:text-slate-300 text-lg md:text-xl font-medium leading-[1.6] mb-6 block not-italic;
+}
+
+.markdown-body blockquote {
+  @apply border-l-4 border-indigo-600 bg-surface-muted px-8 py-6 rounded-r-3xl my-8 font-medium italic text-slate-800 dark:text-slate-200 block;
+}
+
+.markdown-body ul {
+  @apply list-disc list-inside space-y-3 pl-4 my-6 block not-italic text-slate-700 dark:text-slate-300;
+}
+
+.markdown-body ol {
+  @apply list-decimal list-inside space-y-3 pl-4 my-6 block not-italic text-slate-700 dark:text-slate-300;
+}
+
+.markdown-body li {
+  @apply text-lg md:text-xl font-medium leading-relaxed text-slate-700 dark:text-slate-300;
+}
+
+.markdown-body strong {
+  @apply font-black text-foreground not-italic;
+}
+
+.markdown-body em {
+  @apply italic;
+}
+
+.markdown-body a {
+  @apply text-indigo-500 hover:text-indigo-400 font-bold underline transition-colors;
+}
+
+.markdown-body img {
+  @apply w-full max-w-4xl mx-auto rounded-[2.5rem] border border-card-border shadow-2xl my-10 object-cover;
+}
+
+.markdown-body code {
+  @apply font-mono text-xs md:text-sm bg-surface-muted px-2 py-1 rounded-lg text-indigo-500 border border-card-border;
+}
+
+.markdown-body pre {
+  @apply bg-surface-muted border border-card-border p-6 rounded-[2rem] overflow-x-auto my-8 font-mono text-sm text-foreground;
+}

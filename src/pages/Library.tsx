@@ -29,8 +29,33 @@ export default function Library() {
           ...doc.data()
         }));
         setPosts(items);
-      } catch (error) {
-        console.error("Error fetching library:", error);
+      } catch (error: any) {
+        console.warn("Index or query error on authorId + createdAt, falling back to client-side sorting:", error);
+        try {
+          const fallbackQ = query(
+            collection(db, 'posts'),
+            where('authorId', '==', user.uid)
+          );
+          const querySnapshot = await getDocs(fallbackQ);
+          const items = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          } as any));
+          // Robust client-side sort by createdAt desc
+          items.sort((a, b) => {
+            const getMs = (val: any) => {
+              if (!val) return 0;
+              if (typeof val.toMillis === 'function') return val.toMillis();
+              if (val.seconds) return val.seconds * 1000;
+              if (val instanceof Date) return val.getTime();
+              return new Date(val).getTime() || 0;
+            };
+            return getMs(b.createdAt) - getMs(a.createdAt);
+          });
+          setPosts(items);
+        } catch (fallbackErr) {
+          console.error("Critical error fetching library after fallback:", fallbackErr);
+        }
       } finally {
         setLoading(false);
       }
