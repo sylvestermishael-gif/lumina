@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'react-hot-toast';
-import { cn } from '../lib/utils';
+import { cn, getApiUrl } from '../lib/utils';
 
 type Tab = 'profile' | 'account' | 'privacy' | 'billing';
 
@@ -75,7 +75,7 @@ export default function Settings() {
       callback: async (response: any) => {
         setLoading(true);
         try {
-          const verifyResponse = await fetch(`/api/paystack/verify/${response.reference}`);
+          const verifyResponse = await fetch(getApiUrl(`/api/paystack/verify/${response.reference}`));
           const verifyData = await verifyResponse.json();
           
           if (verifyData.data.status === 'success') {

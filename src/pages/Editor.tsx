@@ -28,7 +28,7 @@ import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'fir
 import { useAuth } from '../lib/AuthContext';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
+import { cn, getApiUrl } from '../lib/utils';
 
 export function Editor() {
   const { user, profile } = useAuth();
@@ -205,7 +205,7 @@ export function Editor() {
                       action === 'summarize' ? '/api/ai/summarize' : 
                       '/api/ai/writing-assistant';
       
-      const res = await fetch(endpoint, {
+      const res = await fetch(getApiUrl(endpoint), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

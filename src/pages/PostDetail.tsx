@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { db } from '../lib/firebase';
 import { doc, getDoc, updateDoc, increment } from 'firebase/firestore';
-import { formatDate, cn } from '../lib/utils';
+import { formatDate, cn, getApiUrl } from '../lib/utils';
 import ReactMarkdown from 'react-markdown';
 import { Heart, MessageCircle, Share2, Bookmark, ArrowLeft, Zap, Copy, Twitter, Linkedin, X, Play, Pause, Square, Volume2, Sparkles, Send, Loader2, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { Navbar, PostCard, Footer } from '../components/Navigation';
@@ -78,7 +78,7 @@ export function PostDetail() {
           if (isPlaceholder) {
             setIsGenerating(true);
             try {
-              const res = await fetch('/api/ai/generate-story', {
+              const res = await fetch(getApiUrl('/api/ai/generate-story'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ title: data.title, category: data.category })
@@ -249,7 +249,7 @@ As we build these systems, our goal must not be substitution, but amplification.
     setIsSummarizing(true);
     setSummaryText('');
     try {
-      const res = await fetch('/api/ai/summarize', {
+      const res = await fetch(getApiUrl('/api/ai/summarize'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: post.content })
@@ -279,7 +279,7 @@ As we build these systems, our goal must not be substitution, but amplification.
     setIsChatting(true);
 
     try {
-      const res = await fetch('/api/ai/ask-question', {
+      const res = await fetch(getApiUrl('/api/ai/ask-question'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: post.content, question: currentQuery })

@@ -4,7 +4,7 @@ import { AuthProvider, useAuth } from './lib/AuthContext';
 import { ThemeProvider } from './lib/ThemeContext';
 import { Navbar, PostCard, Footer } from './components/Navigation';
 import { Toaster, toast } from 'react-hot-toast';
-import { cn } from './lib/utils';
+import { cn, getApiUrl } from './lib/utils';
 import { 
   TrendingUp, 
   Users, 
@@ -379,7 +379,7 @@ function Home() {
       });
 
       // 2. Trigger email confirmation via backend
-      await fetch('/api/newsletter/subscribe', {
+      await fetch(getApiUrl('/api/newsletter/subscribe'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: newsletterEmail.toLowerCase().trim() })
