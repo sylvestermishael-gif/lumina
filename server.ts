@@ -2,7 +2,7 @@ import express from "express";
 import path from "path";
 import cors from "cors";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import axios from "axios";
 import { Resend } from "resend";
 import dotenv from "dotenv";
@@ -72,12 +72,14 @@ app.post("/api/ai/summarize", async (req, res) => {
   const ai = getAI();
   if (!ai) return res.status(503).json({ error: "AI service unavailable" });
 
+  const safeContent = typeof content === "string" ? content : "";
+
   try {
     const result = await ai.models.generateContent({
       model: "gemini-3.5-flash",
-      contents: `Summarize the following blog post in 2-3 sentences. Keep it engaging.\n\n${content}`,
+      contents: `Summarize the following blog post in 2-3 sentences. Keep it engaging.\n\n${safeContent}`,
       config: {
-        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
+        thinkingConfig: { thinkingLevel: "LOW" as any }
       }
     });
     res.json({ summary: result.text });
@@ -93,17 +95,20 @@ app.post("/api/ai/ask-question", async (req, res) => {
   const ai = getAI();
   if (!ai) return res.status(503).json({ error: "AI service unavailable" });
 
+  const safeContent = typeof content === "string" ? content : "";
+  const safeQuestion = typeof question === "string" ? question : "";
+
   try {
     const result = await ai.models.generateContent({
       model: "gemini-3.5-flash",
       contents: `You are an expert co-reader and intelligence analyst. Answer the following question about the provided article content. Keep your response insightful, objective, and clear.
 
-Question: ${question}
+Question: ${safeQuestion}
 
 Article Content:
-${content}`,
+${safeContent}`,
       config: {
-        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
+        thinkingConfig: { thinkingLevel: "LOW" as any }
       }
     });
     res.json({ answer: result.text });
@@ -118,18 +123,21 @@ app.post("/api/ai/writing-assistant", async (req, res) => {
   const ai = getAI();
   if (!ai) return res.status(503).json({ error: "AI service unavailable" });
 
+  const safeContent = typeof content === "string" ? content : "";
+  const safeTask = typeof task === "string" ? task : "improve";
+
   const prompts: Record<string, string> = {
-    improve: `Improve the grammar, tone, and narrative flow of this blog post. Make it professional yet conversational. Return ONLY the improved text:\n\n${content}`,
-    complete: `Based on the context, finish this paragraph or section naturally. Return ONLY the new content:\n\n${content}`,
-    shorten: `Condense this text for maximum impact without losing core meaning. Return ONLY the condensed text:\n\n${content}`,
+    improve: `Improve the grammar, tone, and narrative flow of this blog post. Make it professional yet conversational. Return ONLY the improved text:\n\n${safeContent}`,
+    complete: `Based on the context, finish this paragraph or section naturally. Return ONLY the new content:\n\n${safeContent}`,
+    shorten: `Condense this text for maximum impact without losing core meaning. Return ONLY the condensed text:\n\n${safeContent}`,
   };
 
   try {
     const result = await ai.models.generateContent({
       model: "gemini-3.5-flash",
-      contents: prompts[task] || prompts.improve,
+      contents: prompts[safeTask] || prompts.improve,
       config: {
-        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
+        thinkingConfig: { thinkingLevel: "LOW" as any }
       }
     });
     res.json({ result: result.text });
@@ -140,29 +148,97 @@ app.post("/api/ai/writing-assistant", async (req, res) => {
   }
 });
 
+function getFallbackTitles(category: string, currentTitle?: string): string[] {
+  const cat = (category || "Technology").toLowerCase();
+  
+  const techFallbacks = [
+    "The Cognitive Vanguard: Frontiers in AI Alignment",
+    "Beyond Deep Learning: The Neuro-Symbolic Integration",
+    "Decentralized Arrays: Architecting Trust in Multi-Agent Systems",
+    "The Bidirectional Mind: Design Paradigms for Cognitive Collectives",
+    "Digital Craftsmanship: Fusing Intention with Compute"
+  ];
+  const designFallbacks = [
+    "The Architecture of Silence: Navigating Structural Space",
+    "Swiss Modernism in the Digital Age: Minimalist Grid Layouts",
+    "Micro-Animations & Visual Rhythms: Crafting Interactive Intent",
+    "The Cohesive Canvas: Designing Beyond Purple Gradients",
+    "Aesthetic Grounding: Why Typography Drives Every Interface"
+  ];
+  const scienceFallbacks = [
+    "Cosmic Slate: Navigating Neural Intersections",
+    "Entropy and Art: The Physics of Creative Intelligence",
+    "Synaptic Signals: Quantum Mapping of Cognitive Pathways",
+    "The Biosphere of Code: Cellular Automata in Modern Computation",
+    "Synthesized Universes: Modeling Complex Dynamic Systems"
+  ];
+  const opinionFallbacks = [
+    "The Death of AI Slop: Returning to Authenticity in Design",
+    "The Tyranny of Default Layouts: Why We Need Real Craftsmanship",
+    "Quiet Computing: Designing Hardware and Software for Focus",
+    "Mindful Interfaces: Creating Spaces for Bidirectional Dialogue",
+    "The Sovereign Creator: Intellectual Property in the Deep Learning Era"
+  ];
+
+  let list = techFallbacks;
+  if (cat.includes("design") || cat.includes("art") || cat.includes("creative")) {
+    list = designFallbacks;
+  } else if (cat.includes("science") || cat.includes("physics") || cat.includes("research")) {
+    list = scienceFallbacks;
+  } else if (cat.includes("opinion") || cat.includes("essay") || cat.includes("editorial")) {
+    list = opinionFallbacks;
+  }
+
+  if (currentTitle && currentTitle.trim().length > 3) {
+    const t = currentTitle.trim();
+    return [
+      `A Synthesis of: ${t}`,
+      `Deconstructing "${t}"`,
+      `Why "${t}" Redefines Everything`,
+      `The Future of: ${t}`,
+      `The Critical Guide to ${t}`
+    ];
+  }
+
+  return list;
+}
+
 app.post("/api/ai/titles", async (req, res) => {
-  const { content, currentTitle } = req.body;
+  const { content, currentTitle, category } = req.body;
+  const safeContent = typeof content === "string" ? content.trim() : "";
+  const safeCurrentTitle = typeof currentTitle === "string" ? currentTitle.trim() : "";
+  const safeCategory = typeof category === "string" ? category.trim() : "Technology";
+
   const ai = getAI();
-  if (!ai) return res.status(503).json({ error: "AI service unavailable" });
+  if (!ai) {
+    console.warn("AI service unavailable, falling back to local titles.");
+    return res.json({ titles: getFallbackTitles(safeCategory, safeCurrentTitle) });
+  }
 
   try {
+    let prompt = "";
+    if (safeContent.length < 10 && safeCurrentTitle.length < 3) {
+      prompt = `Suggest 5 viral, SEO-optimized, and catchy blog titles for a new article in the "${safeCategory}" category. Focus on emerging trends and high-interest topics. Keep them engaging.`;
+    } else {
+      prompt = `Suggest 5 viral, SEO-optimized, and catchy titles for this blog content: "${safeContent.substring(0, 500)}". ${safeCurrentTitle ? `Current Title: "${safeCurrentTitle}". Ensure suggestions match the existing tone.` : ""}`;
+    }
+
     const result = await ai.models.generateContent({
       model: "gemini-3.5-flash",
-      contents: `Suggest 5 viral, SEO-optimized, and catchy titles for this blog content: "${content.substring(0, 500)}". ${currentTitle ? `Current Title: "${currentTitle}". Ensure suggestions match the existing tone.` : ""}`,
+      contents: prompt,
       config: { 
-        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+        thinkingConfig: { thinkingLevel: "LOW" as any },
         responseMimeType: "application/json",
         responseSchema: {
-          type: Type.ARRAY,
-          items: { type: Type.STRING }
+          type: "ARRAY" as any,
+          items: { type: "STRING" as any }
         }
       }
     });
     res.json({ titles: safeParseJsonArray(result.text || "[]") });
   } catch (error: any) {
-    console.error("Titles error:", error?.message || error);
-    const status = error?.status === "UNAVAILABLE" ? 503 : 500;
-    res.status(status).json({ error: error?.message || "Failed to generate titles" });
+    console.error("Titles generation error, deploying fallback titles:", error?.message || error);
+    res.json({ titles: getFallbackTitles(safeCategory, safeCurrentTitle) });
   }
 });
 
@@ -289,7 +365,7 @@ Make the writing style sophisticated, intellectual, and exciting (matching a pre
       model: "gemini-3.5-flash",
       contents: prompt,
       config: {
-        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
+        thinkingConfig: { thinkingLevel: "LOW" as any }
       }
     });
 

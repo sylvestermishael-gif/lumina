@@ -209,21 +209,29 @@ export function Editor() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          content: content || title,
-          currentTitle: title,
+          content: String(content || title || ''),
+          currentTitle: String(title || ''),
+          category: String(category || 'Technology'),
           task: action === 'improve' ? 'improve' : undefined
         })
       });
+      
+      if (!res.ok) {
+        let msg = 'The synapse is overloaded. Retry uplink.';
+        try {
+          const errData = await res.json();
+          if (errData?.error) msg = errData.error;
+        } catch (_) {
+          msg = `Server returned status ${res.status}. AI features may be initiating or unavailable.`;
+        }
+        throw new Error(msg);
+      }
       
       let data;
       try {
         data = await res.json();
       } catch (err) {
         throw new Error('Malformed interface bridge. Please try again.');
-      }
-      
-      if (!res.ok) {
-        throw new Error(data?.error || 'The synapse is overloaded. Retry uplink.');
       }
       
       if (action === 'titles') {
