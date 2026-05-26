@@ -425,7 +425,7 @@ As we build these systems, our goal must not be substitution, but amplification.
 
         {post.coverImage && (
           <div className="aspect-[21/10] w-full rounded-[3.5rem] overflow-hidden border border-card-border mb-16 shadow-3xl shadow-indigo-500/5 relative group">
-            <img src={post.coverImage} referrerPolicy="no-referrer" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="cover" />
+            <img src={post.coverImage} onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80'; }} referrerPolicy="no-referrer" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="cover" />
             <div className="absolute inset-0 bg-indigo-900/5 mix-blend-overlay"></div>
             <div className="absolute top-8 right-8 flex gap-2 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
                <button 

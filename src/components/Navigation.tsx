@@ -188,6 +188,7 @@ export function PostCard({ post }: { post: any }) {
       <div className="relative aspect-[16/10] overflow-hidden">
          <img 
            src={post.coverImage || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80'} 
+           onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80'; }}
            referrerPolicy="no-referrer"
            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
            alt={post.title}

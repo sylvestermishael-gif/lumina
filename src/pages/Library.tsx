@@ -158,7 +158,7 @@ export default function Library() {
                 >
                   {post.coverImage && (
                     <div className="aspect-[21/9] w-full relative overflow-hidden rounded-t-[2rem]">
-                      <img src={post.coverImage} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105" alt="cover" />
+                      <img src={post.coverImage} onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80'; }} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105" alt="cover" />
                       <div className="absolute inset-0 bg-indigo-900/10 mix-blend-multiply"></div>
                     </div>
                   )}

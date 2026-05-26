@@ -44,7 +44,7 @@ export function Editor() {
   const [aiLoading, setAiLoading] = useState(false);
   const [pendingTask, setPendingTask] = useState<'summarize' | 'improve' | 'titles' | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'editor' | 'assistant' | 'media'>('editor');
+  const [activeTab, setActiveTab] = useState<'editor' | 'media'>('editor');
   const [editorMode, setEditorMode] = useState<'write' | 'preview'>('write');
 
   // Interactive TTS & Voiceover State Engine
@@ -183,7 +183,7 @@ export function Editor() {
            setTitle(data.title);
            setContent(data.content);
            setCategory(data.category);
-           setCoverImage(data.coverImage);
+           setCoverImage(data.coverImage || '');
          }
        };
        loadPost();
@@ -316,7 +316,7 @@ export function Editor() {
       
       {/* 📱 Premium Mobile Sticky Control Hub (Only visible on screens < lg) */}
       <div className="col-span-1 lg:hidden shrink-0 sticky top-0 bg-background/95 backdrop-blur-md z-40 border-b border-card-border py-4 mb-2 flex gap-2">
-        {(['editor', 'assistant', 'media'] as const).map(tab => (
+        {(['editor', 'media'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -328,7 +328,7 @@ export function Editor() {
             )}
           >
             <span>
-              {tab === 'editor' ? '📝 Writer' : tab === 'assistant' ? '✨ AI Assist' : '🚀 Cover & Publish'}
+              {tab === 'editor' ? '📝 Writer' : '🚀 Cover & Publish'}
             </span>
           </button>
         ))}
@@ -522,99 +522,7 @@ export function Editor() {
       <aside className={cn("space-y-10 lg:overflow-y-auto pb-20 scrollbar-hide lg:block", activeTab !== 'editor' ? "block" : "hidden")}>
         <div className="editorial-card p-6 lg:p-10 bg-card-bg shadow-2xl shadow-black/5 dark:shadow-black/20 space-y-6 lg:space-y-10 sticky top-0 border border-card-border">
           
-          {/* Writing Assistant Control Rack */}
-          <div className={cn("lg:block space-y-6", activeTab === 'assistant' ? "block" : "hidden")}>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex gap-1">
-                 <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></div>
-                 <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse delay-75"></div>
-              </div>
-              <h3 className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-500 italic">Writing Assistant</h3>
-            </div>
-            
-            <div className="grid grid-cols-1 gap-3">
-              <button 
-                onClick={() => handleAIAction('titles')}
-                disabled={aiLoading}
-                className="w-full flex items-center justify-between p-5 bg-surface-muted hover:bg-indigo-500/5 border border-card-border rounded-3xl text-[10px] font-black uppercase tracking-widest transition-all group"
-              >
-                <div className="flex items-center gap-3">
-                   <div className="w-8 h-8 bg-card-bg rounded-xl flex items-center justify-center text-slate-400 group-hover:text-indigo-600 transition-colors">
-                      <Zap className="w-4 h-4" />
-                   </div>
-                   <span className="text-foreground">Generate Titles</span>
-                </div>
-                {aiLoading && pendingTask === 'titles' ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />
-                )}
-              </button>
 
-              {aiSuggestions.length > 0 && (
-                <div className="p-6 bg-indigo-500/5 rounded-3xl border border-indigo-500/10 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-600 italic">Suggested Titles</h4>
-                    <button 
-                      onClick={() => setAiSuggestions([])}
-                      className="text-[8px] font-black uppercase tracking-tighter text-slate-400 hover:text-red-500 transition-colors"
-                    >
-                      Clear
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    {aiSuggestions.map((s, i) => (
-                      <button 
-                        key={i}
-                        onClick={() => {
-                          setTitle(s);
-                          setAiSuggestions([]);
-                        }}
-                        className="w-full text-left p-3 bg-card-bg border border-card-border rounded-xl text-[10px] font-bold text-foreground hover:border-indigo-500 transition-all line-clamp-2"
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <button 
-                onClick={() => handleAIAction('improve')}
-                disabled={aiLoading}
-                className="w-full flex items-center justify-between p-5 bg-surface-muted hover:bg-indigo-500/5 border border-card-border rounded-3xl text-[10px] font-black uppercase tracking-widest transition-all group"
-              >
-                <div className="flex items-center gap-3">
-                   <div className="w-8 h-8 bg-card-bg rounded-xl flex items-center justify-center text-slate-400 group-hover:text-indigo-600 transition-colors">
-                      <LayoutDashboard className="w-4 h-4" />
-                   </div>
-                   <span className="text-foreground">Optimize Flow</span>
-                </div>
-                {aiLoading && pendingTask === 'improve' ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />
-                )}
-              </button>
-
-              <button 
-                onClick={() => handleAIAction('summarize')}
-                disabled={aiLoading}
-                className="w-full flex items-center justify-between p-5 bg-surface-muted hover:bg-indigo-500/5 border border-card-border rounded-3xl text-[10px] font-black uppercase tracking-widest transition-all group"
-              >
-                <div className="flex items-center gap-3">
-                   <div className="w-8 h-8 bg-card-bg rounded-xl flex items-center justify-center text-slate-400 group-hover:text-indigo-600 transition-colors">
-                      <Globe className="w-4 h-4" />
-                   </div>
-                   <span className="text-foreground">Synthesis Summary</span>
-                </div>
-                {aiLoading && pendingTask === 'summarize' ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />
-                )}
-              </button>
-            </div>
-          </div>
 
           {/* Post Cover Media Slot */}
           <div className={cn("space-y-6 lg:block", activeTab === 'media' ? "block" : "hidden")}>
@@ -624,7 +532,7 @@ export function Editor() {
              
              {coverImage ? (
                 <div className="relative aspect-video rounded-[2.5rem] overflow-hidden border border-card-border shadow-2xl group">
-                   <img referrerPolicy="no-referrer" src={coverImage} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="Cover preview" />
+                   <img referrerPolicy="no-referrer" src={coverImage} onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80'; }} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="Cover preview" />
                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
                       <button 
                         onClick={() => setCoverImage('')}
@@ -655,7 +563,7 @@ export function Editor() {
                 <input 
                   type="text" 
                   placeholder="Paste external image URL..."
-                  value={coverImage.startsWith('data:') ? '' : coverImage}
+                  value={(coverImage && typeof coverImage === 'string' && coverImage.startsWith('data:')) ? '' : (coverImage || '')}
                   onChange={(e) => setCoverImage(e.target.value)}
                   className="editorial-input pl-12 w-full text-[10px] font-black italic py-5 shadow-inner bg-surface-muted border-card-border focus:bg-card-bg font-mono"
                 />
@@ -845,17 +753,7 @@ export function Editor() {
           </div>
         </div>
 
-        {/* Post Insights Box */}
-        <div className={cn("p-8 bg-gradient-to-br from-indigo-600 to-violet-800 rounded-[2.5rem] text-white shadow-3xl shadow-indigo-100 relative overflow-hidden group lg:block", activeTab === 'assistant' ? "block" : "hidden")}>
-           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-           <h4 className="text-lg font-black italic tracking-tighter mb-3">Post Insights</h4>
-           <p className="text-indigo-100 text-[11px] font-medium leading-relaxed mb-5">
-             Your current post quality score is <span className="text-white font-bold">8.4/10</span>. High engagement predicted in this category.
-           </p>
-           <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-              <motion.div initial={{ width: 0 }} animate={{ width: '84%' }} transition={{ duration: 1.5 }} className="h-full bg-white shadow-[0_0_10px_rgba(255,255,255,1)]" />
-           </div>
-        </div>
+
       </aside>
     </div>
   );
